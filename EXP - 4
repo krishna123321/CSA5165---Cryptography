@@ -1,0 +1,16 @@
+#include <stdio.h>
+#include <string.h>
+void encrypt(char pt[], char key[], char ct[]) {
+    int len = strlen(pt), keyLen = strlen(key);
+    for (int i = 0; i < len; i++) {
+        int shift = key[i % keyLen] - 'A';
+        ct[i] = ((pt[i] - 'A' + shift) % 26) + 'A';
+    }
+    ct[len] = '\0';
+}
+int main() {
+    char key[] = "LEMON", pt[] = "ATTACKATDAWN", ct[100];
+    encrypt(pt, key, ct);
+    printf("Ciphertext: %s\n", ct);
+    return 0;
+}
