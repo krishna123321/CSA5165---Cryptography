@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+void generateKey(char *str, char *key, int keyLength) {
+    int i, j;
+    int strLength = strlen(str);
+	for (i = 0, j = 0; i < strLength; i++) {
+        if (isalpha(str[i])) {
+            key[i] = key[j % keyLength];
+            j++;
+        } else {
+            key[i] = str[i];
+        }
+    }
+    key[strLength] = '\0';
+}
+void encryptText(char *str, char *key, char *cipherText) {
+    int i;
+    int strLength = strlen(str);
+	for (i = 0; i < strLength; i++) {
+        if (isalpha(str[i])) {
+            char base = isupper(str[i]) ? 'A' : 'a';
+            cipherText[i] = (str[i] + key[i] - 2 * base) % 26 + base;
+        } else {
+            cipherText[i] = str[i];
+        }
+    }
+    cipherText[strLength] = '\0';
+}
+int main() {
+    char str[100], key[100], generatedKey[100], cipherText[100];
+	printf("Enter plaintext: ");
+    gets(str);
+	printf("Enter key: ");
+    gets(key);
+	generateKey(str, key, strlen(key));
+    encryptText(str, generatedKey, cipherText);
+	printf("Encrypted text: %s\n", cipherText);
+	return 0;
+}
