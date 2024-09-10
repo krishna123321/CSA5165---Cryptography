@@ -1,0 +1,86 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+#define ALPHABET_SIZE 26
+double english_frequencies[ALPHABET_SIZE] = {
+    8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015, 6.094, 6.966, 0.153, 
+    0.772, 4.025, 2.406, 6.749, 7.507, 1.929, 0.095, 5.987, 6.327, 9.056, 
+    2.758, 0.978, 2.360, 0.150, 1.974, 0.074
+};
+void decryptWithKey(const char* ciphertext, char* plaintext, int key) {
+    int length = strlen(ciphertext);
+    for (int i = 0; i < length; i++) {
+        if (isalpha(ciphertext[i])) {
+            char offset = isupper(ciphertext[i]) ? 'A' : 'a';
+            plaintext[i] = ((ciphertext[i] - offset - key + ALPHABET_SIZE) % ALPHABET_SIZE) + offset;
+        } else {
+            plaintext[i] = ciphertext[i]; 
+        }
+    }
+    plaintext[length] = '\0';
+}
+void calculateFrequencies(const char* text, double* frequencies) {
+    int letter_count[ALPHABET_SIZE] = {0};
+    int total_letters = 0;
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            int index = tolower(text[i]) - 'a';
+            letter_count[index]++;
+            total_letters++;
+        }
+    }
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        frequencies[i] = (letter_count[i] / (double)total_letters) * 100.0;
+    }
+}
+double chiSquaredStatistic(double* text_frequencies) {
+    double chi_squared = 0.0;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        double observed = text_frequencies[i];
+        double expected = english_frequencies[i];
+        chi_squared += pow(observed - expected, 2) / expected;
+    }
+    return chi_squared;
+}
+void frequencyAttack(const char* ciphertext, int topN) {
+    int length = strlen(ciphertext);
+    char decrypted[256];
+    double frequencies[ALPHABET_SIZE];
+    double chi_squared_scores[ALPHABET_SIZE];
+    for (int key = 0; key < ALPHABET_SIZE; key++) {
+        decryptWithKey(ciphertext, decrypted, key);
+        calculateFrequencies(decrypted, frequencies);
+        chi_squared_scores[key] = chiSquaredStatistic(frequencies);
+    }
+    int sorted_keys[ALPHABET_SIZE];
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        sorted_keys[i] = i;
+    }
+	for (int i = 0; i < ALPHABET_SIZE - 1; i++) {
+        for (int j = i + 1; j < ALPHABET_SIZE; j++) {
+            if (chi_squared_scores[sorted_keys[i]] > chi_squared_scores[sorted_keys[j]]) {
+                int temp = sorted_keys[i];
+                sorted_keys[i] = sorted_keys[j];
+                sorted_keys[j] = temp;
+            }
+        }
+    }
+    printf("Top %d possible plaintexts based on frequency analysis:\n", topN);
+    for (int i = 0; i < topN; i++) {
+        int key = sorted_keys[i];
+        decryptWithKey(ciphertext, decrypted, key);
+        printf("Key: %d, Plaintext: %s\n", key, decrypted);
+    }
+}
+int main() {
+    char ciphertext[256];
+    int topN;
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+    ciphertext[strcspn(ciphertext, "\n")] = '\0';
+    printf("Enter the number of possible plaintexts to display: ");
+    scanf("%d", &topN);
+    frequencyAttack(ciphertext, topN);
+	return 0;
+}
