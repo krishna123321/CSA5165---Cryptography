@@ -1,0 +1,19 @@
+#include <stdio.h>
+#include <math.h>
+unsigned long long factorial(int n) {
+    if (n == 0 || n == 1)
+        return 1;
+    unsigned long long result = 1;
+    for (int i = 2; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+}
+
+int main() {
+    int n = 25;
+    unsigned long long total_permutations = factorial(n);
+    printf("Total possible keys (25!): %llu\n", total_permutations);
+    printf("Approximate power of 2: %.2f\n", log2((double)total_permutations));
+	return 0;
+}
