@@ -1,0 +1,46 @@
+#include <stdio.h>
+#include <string.h>
+void frequencyAnalysis(char ct[], int freq[]) {
+    int i;
+    for (i = 0; i < strlen(ct); i++) {
+        if (ct[i] >= '!' && ct[i] <= '~') {
+            freq[ct[i] - '!']++;
+        }
+    }
+}
+void printFrequency(int freq[]) {
+    printf("Character frequencies:\n");
+    for (int i = 0; i < 94; i++) {
+        if (freq[i] > 0) {
+            printf("'%c': %d\n", i + '!', freq[i]);
+        }
+    }
+}
+void decrypt(char ct[], char substitution[], char pt[]) {
+    int i;
+    for (i = 0; i < strlen(ct); i++) {
+        if (ct[i] >= '!' && ct[i] <= '~') {
+            pt[i] = substitution[ct[i] - '!'];
+        } else {
+            pt[i] = ct[i];
+        }
+    }
+    pt[i] = '\0'; 
+}
+int main() {
+    char ct[] = "53‡‡†305))6*;4826)4‡.)4‡);806*;48†8¶60))85;;]8*;:‡8†83(88)5†;46(;88*96*?;8)‡(;485);5†2:‡(;4956*2(5—4)8¶8*;4069285);)6†8)4‡‡;1(‡9;48081;8:8‡1;48†85;4)485†528806*81(‡9;48;(88;4(‡?34;48)4‡;161;:188;‡?";
+    char pt[500]; 
+    int freq[94] = {0};
+    frequencyAnalysis(ct, freq);
+    printFrequency(freq);
+    char substitution[94];
+    for (int i = 0; i < 94; i++) {
+        substitution[i] = '?'; 
+    }
+    substitution['‡' - '!'] = 'e';
+    substitution['†' - '!'] = 't';
+    substitution['¶' - '!'] = 'h';
+    decrypt(ct, substitution, pt);
+    printf("Partially decrypted message: %s\n", pt);
+	return 0;
+}
