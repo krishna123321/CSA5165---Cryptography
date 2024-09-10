@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define MATRIX_SIZE 5
+#define MAX_TEXT_LENGTH 100
+char matrix[MATRIX_SIZE][MATRIX_SIZE] = {
+    {'M', 'F', 'H', 'I', 'K'},
+    {'U', 'N', 'O', 'P', 'Q'},
+    {'Z', 'V', 'W', 'X', 'Y'},
+    {'E', 'L', 'A', 'R', 'G'},
+    {'D', 'S', 'T', 'B', 'C'}
+};
+char toUpper(char c) {
+    return toupper(c);
+}
+void prepareMessage(char *text, char *preparedText) {
+    int j = 0;
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            char ch = toUpper(text[i]);
+            if (ch == 'J') ch = 'I';  
+            preparedText[j++] = ch;
+        }
+    }
+    for (int i = 0; i < j - 1; i++) {
+        if (preparedText[i] == preparedText[i + 1]) {
+            for (int k = j; k > i + 1; k--) {
+                preparedText[k + 1] = preparedText[k];
+            }
+            preparedText[i + 1] = 'X';
+            j++;
+        }
+    }
+    if (j % 2 != 0) {
+        preparedText[j++] = 'X'; 
+    }
+    preparedText[j] = '\0';
+}
+void findPosition(char ch, int *row, int *col) {
+    for (*row = 0; *row < MATRIX_SIZE; (*row)++) {
+        for (*col = 0; *col < MATRIX_SIZE; (*col)++) {
+            if (matrix[*row][*col] == ch) return;
+        }
+    }
+}
+void encryptDigraph(char a, char b, char *encryptedA, char *encryptedB) {
+    int rowA, colA, rowB, colB;
+    findPosition(a, &rowA, &colA);
+    findPosition(b, &rowB, &colB);
+    
+    if (rowA == rowB) {
+        *encryptedA = matrix[rowA][(colA + 1) % MATRIX_SIZE];
+        *encryptedB = matrix[rowB][(colB + 1) % MATRIX_SIZE];
+    } else if (colA == colB) {
+        *encryptedA = matrix[(rowA + 1) % MATRIX_SIZE][colA];
+        *encryptedB = matrix[(rowB + 1) % MATRIX_SIZE][colB];
+    } else {
+        *encryptedA = matrix[rowA][colB];
+        *encryptedB = matrix[rowB][colA];
+    }
+}
+void encryptMessage(const char *message, char *encryptedMessage) {
+    char preparedText[MAX_TEXT_LENGTH];
+    prepareMessage((char *)message, preparedText);
+
+    int length = strlen(preparedText);
+    int index = 0;
+
+    for (int i = 0; i < length; i += 2) {
+        char a = preparedText[i];
+        char b = preparedText[i + 1];
+        char encryptedA, encryptedB;
+
+        encryptDigraph(a, b, &encryptedA, &encryptedB);
+        encryptedMessage[index++] = encryptedA;
+        encryptedMessage[index++] = encryptedB;
+    }
+    encryptedMessage[index] = '\0';
+}
+
+int main() {
+    const char *message = "Must see you over Cadogan West. Coming at once.";
+    char encryptedMessage[MAX_TEXT_LENGTH];
+
+    encryptMessage(message, encryptedMessage);
+
+    printf("Encrypted Message: %s\n", encryptedMessage);
+
+    return 0;
+}
