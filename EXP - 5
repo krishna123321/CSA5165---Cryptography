@@ -1,0 +1,34 @@
+#include <stdio.h>
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+int isValidA(int a) {
+    return gcd(a, 26) == 1;
+}
+void affineEncrypt(int a, int b, char pt[], char ct[]) {
+    int i = 0;
+    while (pt[i] != '\0') {
+        int p_num = pt[i] - 'A';
+        int c_num = (a * p_num + b) % 26;
+        ct[i] = c_num + 'A';
+        i++;
+    }
+    ct[i] = '\0';
+}
+int main() {
+    int a = 5, b = 8;
+    char pt[] = "HELLO", ct[100];
+    if (isValidA(a)){
+        affineEncrypt(a, b, pt, ct);
+        printf("Ciphertext: %s\n", ct);
+    }
+	else{
+		printf("Invalid value of 'a'. Decryption is not possible.\n");
+    }
+	return 0;
+}
