@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#define ALPHABET_SIZE 26
+double english_frequencies[ALPHABET_SIZE] = {
+    8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015, 6.094, 6.966, 0.153, 
+    0.772, 4.025, 2.406, 6.749, 7.507, 1.929, 0.095, 5.987, 6.327, 9.056, 
+    2.758, 0.978, 2.360, 0.150, 1.974, 0.074
+};
+void calculateFrequencies(const char* text, double* frequencies) {
+    int letter_count[ALPHABET_SIZE] = {0};
+    int total_letters = 0;
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            int index = tolower(text[i]) - 'a';
+            letter_count[index]++;
+            total_letters++;
+        }
+    }
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        frequencies[i] = (letter_count[i] / (double)total_letters) * 100.0;
+    }
+}
+void createMapping(const double* cipher_frequencies, char* mapping) {
+    int cipher_order[ALPHABET_SIZE];
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        cipher_order[i] = i;
+    }
+    for (int i = 0; i < ALPHABET_SIZE - 1; i++) {
+        for (int j = i + 1; j < ALPHABET_SIZE; j++) {
+            if (cipher_frequencies[cipher_order[i]] < cipher_frequencies[cipher_order[j]]) {
+                int temp = cipher_order[i];
+                cipher_order[i] = cipher_order[j];
+                cipher_order[j] = temp;
+            }
+        }
+    }
+    const char* english_order = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        mapping[cipher_order[i]] = english_order[i];
+    }
+}
+void decryptWithMapping(const char* ciphertext, const char* mapping, char* plaintext) {
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        if (isalpha(ciphertext[i])) {
+            char offset = isupper(ciphertext[i]) ? 'A' : 'a';
+            int index = tolower(ciphertext[i]) - 'a';
+            plaintext[i] = mapping[index] - ('A' - offset);
+        } else {
+            plaintext[i] = ciphertext[i]; 
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0'; 
+}
+void frequencyAttack(const char* ciphertext, int topN) {
+    double cipher_frequencies[ALPHABET_SIZE];
+    char mapping[ALPHABET_SIZE];
+    char plaintext[256];
+    calculateFrequencies(ciphertext, cipher_frequencies);
+    createMapping(cipher_frequencies, mapping);
+    decryptWithMapping(ciphertext, mapping, plaintext);
+    printf("Most likely plaintext based on frequency analysis: %s\n", plaintext);
+}
+int main() {
+    char ciphertext[256];
+    int topN;
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+    ciphertext[strcspn(ciphertext, "\n")] = '\0'; 
+    printf("Enter the number of possible plaintexts to display: ");
+    scanf("%d", &topN);
+    frequencyAttack(ciphertext, topN);
+    return 0;
+}
