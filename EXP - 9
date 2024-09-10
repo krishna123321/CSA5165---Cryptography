@@ -1,0 +1,35 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#define SIZE 5
+#define MAX_LEN 100
+void constructMatrix(const char *key, char matrix[SIZE][SIZE]) {
+    int used[26] = {0}, row = 0, col = 0;
+    for (int i = 0; key[i]; i++) {
+        char ch = toupper(key[i]) == 'J' ? 'I' : toupper(key[i]);
+        if (isalpha(ch) && !used[ch - 'A']) matrix[row][col++] = ch, used[ch - 'A'] = 1, (col == SIZE) ? (col = 0, row++) : 0;
+    }
+    for (char ch = 'A'; ch <= 'Z'; ch++) if (ch != 'J' && !used[ch - 'A']) matrix[row][col++] = ch, (col == SIZE) ? (col = 0, row++) : 0;
+}
+void decryptDigraph(char a, char b, char matrix[SIZE][SIZE], char *da, char *db) {
+    int ra, ca, rb, cb;
+    for (int i = 0; i < SIZE; i++) for (int j = 0; j < SIZE; j++) {
+        if (matrix[i][j] == a) ra = i, ca = j;
+        if (matrix[i][j] == b) rb = i, cb = j;
+    }
+    *da = (ra == rb) ? matrix[ra][(ca + SIZE - 1) % SIZE] : (ca == cb) ? matrix[(ra + SIZE - 1) % SIZE][ca] : matrix[ra][cb];
+    *db = (ra == rb) ? matrix[rb][(cb + SIZE - 1) % SIZE] : (ca == cb) ? matrix[(rb + SIZE - 1) % SIZE][cb] : matrix[rb][ca];
+}
+void decryptMessage(const char *message, const char *key, char *decrypted) {
+    char matrix[SIZE][SIZE];
+    constructMatrix(key, matrix);
+    for (int i = 0; message[i]; i += 2)
+        decryptDigraph(toupper(message[i]), toupper(message[i + 1]), matrix, &decrypted[i], &decrypted[i + 1]);
+    decrypted[strlen(message)] = '\0';
+}
+int main() {
+    char message[] = "BMODZBXDNABEKUDMUIXMMOUVIF", decrypted[MAX_LEN];
+    decryptMessage(message, "Playfair Example", decrypted);
+    printf("Decrypted Message: %s\n", decrypted);
+    return 0;
+}
