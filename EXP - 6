@@ -1,0 +1,39 @@
+#include <stdio.h>
+int modInverse(int a, int m) {
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1; 
+}
+void affineDecrypt(int a, int b, char ct[], char pt[]) {
+    int a_inv = modInverse(a, 26);
+    if (a_inv == -1) {
+        printf("No modular inverse for 'a'. Decryption is not possible.\n");
+        return;
+    }
+	int i = 0;
+    while (ct[i] != '\0') {
+        int c_num = ct[i] - 'A';  
+        int p_num = (a_inv * (c_num - b + 26)) % 26;  
+        pt[i] = p_num + 'A'; 
+        i++;
+    }
+    pt[i] = '\0'; 
+}
+int main() {
+    int a, b;
+    char ct[] = "BU...";  
+    char pt[100];
+    int P_E = 4, P_T = 19;  
+    int C_B = 1, C_U = 20; 
+    int delta_p = P_T - P_E;
+    int delta_c = C_U - C_B;
+	a = (delta_c * modInverse(delta_p, 26)) % 26;
+    if (a < 0) a += 26;
+    b = (C_B - a * P_E) % 26;
+    if (b < 0) b += 26;
+    affineDecrypt(a, b, ct, pt);
+	printf("Decrypted text: %s\n", pt);
+    return 0;
+}
