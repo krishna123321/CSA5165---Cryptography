@@ -1,0 +1,86 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define SIZE 2
+#define MOD 26
+void printMatrix(int mat[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            printf("%d ", mat[i][j]);
+        }
+        printf("\n");
+    }
+}
+void multiplyMatrix(int mat1[SIZE][SIZE], int mat2[SIZE][SIZE], int result[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            result[i][j] = 0;
+            for (int k = 0; k < SIZE; k++) {
+                result[i][j] = (result[i][j] + mat1[i][k] * mat2[k][j]) % MOD;
+            }
+        }
+    }
+}
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1;
+}
+void inverseMatrix(int mat[SIZE][SIZE], int inv[SIZE][SIZE]) {
+    int det = (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) % MOD;
+    det = (det + MOD) % MOD; 
+    int invDet = modInverse(det, MOD);
+    inv[0][0] = mat[1][1] * invDet % MOD;
+    inv[0][1] = -mat[0][1] * invDet % MOD;
+    inv[1][0] = -mat[1][0] * invDet % MOD;
+    inv[1][1] = mat[0][0] * invDet % MOD
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            inv[i][j] = (inv[i][j] + MOD) % MOD;
+        }
+    }
+}
+void textToVector(char *text, int vec[SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        vec[i] = text[i] - 'a';
+    }
+}
+void vectorToText(int vec[SIZE], char *text) {
+    for (int i = 0; i < SIZE; i++) {
+        text[i] = vec[i] + 'a';
+    }
+    text[SIZE] = '\0';
+}
+void knownPlaintextAttack(char *pt1, char *ct1, char *pt2, char *ct2) {
+    int ptVec1[SIZE], ptVec2[SIZE];
+    int ctVec1[SIZE], ctVec2[SIZE];
+    int A[SIZE][SIZE], B[SIZE][SIZE], key[SIZE][SIZE];
+	textToVector(pt1, ptVec1);
+    textToVector(pt2, ptVec2);
+    textToVector(ct1, ctVec1);
+    textToVector(ct2, ctVec2);
+	for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            A[i][j] = ptVec1[i] * (i == j) + ptVec2[i] * (i != j); 
+            B[i][j] = ctVec1[i] * (i == j) + ctVec2[i] * (i != j); 
+        }
+    }
+    int A_inv[SIZE][SIZE];
+    inverseMatrix(A, A_inv);
+    multiplyMatrix(A_inv, B, key);
+    printf("Key Matrix:\n");
+    printMatrix(key);
+}
+int main() {
+    char pt1[] = "me";
+    char ct1[] = "lw";
+    char pt2[] = "et";
+    char ct2[] = "hk";
+    knownPlaintextAttack(pt1, ct1, pt2, ct2);
+
+    return 0;
+}
