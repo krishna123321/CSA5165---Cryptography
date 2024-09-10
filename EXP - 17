@@ -1,0 +1,92 @@
+#include <stdio.h>
+#include <stdint.h>
+int initial_permutation[64] = { /*...*/ };  
+int final_permutation[64] = { /*...*/ };   
+int expansion_table[48] = { /*...*/ };     
+int sbox[8][4][16] = { /*...*/ };          
+int pbox[32] = { /*...*/ };                
+int pc1_table[56] = { /*...*/ };           
+int pc2_table[48] = { /*...*/ };     
+void applyPermutation(uint64_t *data, const int *table, int size) {
+    uint64_t result = 0;
+    for (int i = 0; i < size; i++) {
+        result <<= 1;
+        result |= (*data >> (64 - table[i])) & 1;
+    }
+    *data = result;
+}
+uint32_t circularLeftShift(uint32_t value, int shifts) {
+    return ((value << shifts) | (value >> (28 - shifts))) & 0x0FFFFFFF;
+}
+uint64_t expandR(uint32_t R) {
+    uint64_t result = 0;
+    for (int i = 0; i < 48; i++) {
+        result <<= 1;
+        result |= (R >> (32 - expansion_table[i])) & 1;
+    }
+    return result;
+}
+uint32_t applySBoxes(uint64_t input) {
+    uint32_t output = 0;
+    for (int i = 0; i < 8; i++) {
+        int row = ((input >> (42 - 6 * i)) & 0x20) | ((input >> (42 - 6 * i)) & 1);
+        int col = (input >> (43 - 6 * i)) & 0xF;
+        output |= sbox[i][row][col] << (28 - 4 * i);
+    }
+    return output;
+}
+void generateSubkeys(uint64_t key, uint64_t subkeys[16]) {
+    uint64_t permuted_key = 0;
+    for (int i = 0; i < 56; i++) {
+        permuted_key <<= 1;
+        permuted_key |= (key >> (64 - pc1_table[i])) & 1;
+    }
+    uint32_t C = (permuted_key >> 28) & 0x0FFFFFFF;
+    uint32_t D = permuted_key & 0x0FFFFFFF;
+
+    int shift_schedule[16] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
+    for (int round = 0; round < 16; round++) {
+        C = circularLeftShift(C, shift_schedule[round]);
+        D = circularLeftShift(D, shift_schedule[round]);
+        uint64_t combined = ((uint64_t)C << 28) | D;
+
+        uint64_t subkey = 0;
+        for (int i = 0; i < 48; i++) {
+            subkey <<= 1;
+            subkey |= (combined >> (56 - pc2_table[i])) & 1;
+        }
+        subkeys[15 - round] = subkey; 
+    }
+}
+void DESdecrypt(uint64_t ciphertext, uint64_t key, uint64_t *plaintext) {
+    uint64_t subkeys[16];
+    generateSubkeys(key, subkeys);
+	applyPermutation(&ciphertext, initial_permutation, 64);
+    uint32_t L = (ciphertext >> 32) & 0xFFFFFFFF;
+    uint32_t R = ciphertext & 0xFFFFFFFF;
+	for (int round = 0; round < 16; round++) {
+        uint64_t expanded_R = expandR(R);
+        uint64_t temp = expanded_R ^ subkeys[round];
+        uint32_t S_output = applySBoxes(temp);
+        
+        uint32_t P_output = 0;
+        for (int i = 0; i < 32; i++) {
+            P_output <<= 1;
+            P_output |= (S_output >> (32 - pbox[i])) & 1;
+        }
+        uint32_t new_R = L ^ P_output;
+        L = R;
+        R = new_R;
+    }
+	uint64_t combined = ((uint64_t)R << 32) | L;
+    applyPermutation(&combined, final_permutation, 64);
+    *plaintext = combined;
+}
+int main() {
+    uint64_t ciphertext = 0x0123456789ABCDEF;
+    uint64_t key = 0x133457799BBCDFF1;        
+    uint64_t plaintext;
+	DESdecrypt(ciphertext, key, &plaintext);
+	printf("Decrypted plaintext: %016lX\n", plaintext);
+    return 0;
+}
