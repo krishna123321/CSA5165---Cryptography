@@ -1,0 +1,61 @@
+#include <stdio.h>
+int gcd(int a, int b) {
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+int mod_exp(int base, int exp, int mod) {
+    int result = 1;
+    base = base % mod;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    return result;
+}
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0;
+        *y = 1;
+        return b;
+    }
+    int x1, y1;
+    int gcd = extended_gcd(b % a, a, &x1, &y1);
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+    return gcd;
+}
+int mod_inverse(int e, int phi_n) {
+    int x, y;
+    int g = extended_gcd(e, phi_n, &x, &y);
+    if (g != 1) {
+        return -1; 
+    }
+    return (x % phi_n + phi_n) % phi_n;
+}
+void rsa_key_generation(int p, int q) {
+    int n = p * q;
+    int phi_n = (p - 1) * (q - 1);
+    int e = 3;
+    while (gcd(e, phi_n) != 1) {
+        e++;
+    }
+    int d = mod_inverse(e, phi_n);
+    if (d == -1) {
+        printf("No modular inverse found for e = %d and phi(n) = %d\n", e, phi_n);
+        return;
+    }
+    printf("RSA Public Key (e, n): (%d, %d)\n", e, n);
+    printf("RSA Private Key (d, n): (%d, %d)\n", d, n);
+}
+int main() {
+    int p = 61, q = 53;
+    printf("Generating RSA keys with p = %d and q = %d\n", p, q);
+    rsa_key_generation(p, q);
+    printf("\nIf Bob leaks his private key and generates a new key pair using the same n...\n");
+    rsa_key_generation(p, q); 
+    return 0;
+}
