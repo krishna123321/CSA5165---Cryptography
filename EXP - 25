@@ -1,0 +1,48 @@
+#include <stdio.h>
+int gcd(int a, int b) {
+    if (b == 0) {
+        return a;
+    }
+    return gcd(b, a % b);
+}
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0;
+        *y = 1;
+        return b;
+    }
+    int x1, y1; 
+    int gcd = extended_gcd(b % a, a, &x1, &y1);
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+    return gcd;
+}
+int mod_inverse(int e, int phi_n) {
+    int x, y;
+    int gcd = extended_gcd(e, phi_n, &x, &y);
+    if (gcd != 1) {
+        return -1; 
+    }
+    return (x % phi_n + phi_n) % phi_n;
+}
+int main() {
+    int n = 3599;     
+    int e = 31;        
+    int plaintext_block = 177; 
+    int common_factor = gcd(plaintext_block, n);
+    if (common_factor == 1 || common_factor == n) {
+        printf("No common factor found. RSA cannot be broken this way.\n");
+        return 0;
+    }
+    int p = common_factor;
+    int q = n / p;
+    printf("Factorization of n: p = %d, q = %d\n", p, q);
+    int phi_n = (p - 1) * (q - 1);
+    int d = mod_inverse(e, phi_n);
+    if (d == -1) {
+        printf("Modular inverse doesn't exist, RSA cannot be broken.\n");
+    } else {
+        printf("The private key d is: %d\n", d);
+    }
+    return 0;
+}
