@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <openssl/des.h>
+#define BLOCK_SIZE 8 
+void introduce_error(uint8_t *ciphertext, size_t block_num, size_t bit_num) {
+    ciphertext[block_num * BLOCK_SIZE + bit_num / 8] ^= (1 << (bit_num % 8));
+}
+void ECB_encrypt(uint8_t *plaintext, size_t len, uint8_t *key, uint8_t *ciphertext) {
+    DES_key_schedule ks;
+    DES_set_key_unchecked((DES_cblock *)key, &ks);
+
+    for (size_t i = 0; i < len; i += BLOCK_SIZE) {
+        DES_ecb_encrypt((DES_cblock *)(plaintext + i), (DES_cblock *)(ciphertext + i), &ks, DES_ENCRYPT);
+    }
+}
+void CBC_encrypt(uint8_t *plaintext, size_t len, uint8_t *key, uint8_t *iv, uint8_t *ciphertext) {
+    DES_key_schedule ks;
+    DES_set_key_unchecked((DES_cblock *)key, &ks);
+    uint8_t xor_block[BLOCK_SIZE];
+    memcpy(xor_block, iv, BLOCK_SIZE); 
+    for (size_t i = 0; i < len; i += BLOCK_SIZE) {
+        for (size_t j = 0; j < BLOCK_SIZE; j++) {
+            xor_block[j] ^= plaintext[i + j];
+        }
+        DES_ecb_encrypt((DES_cblock *)xor_block, (DES_cblock *)(ciphertext + i), &ks, DES_ENCRYPT);
+        memcpy(xor_block, ciphertext + i, BLOCK_SIZE);
+    }
+}
+void ECB_decrypt(uint8_t *ciphertext, size_t len, uint8_t *key, uint8_t *decrypted) {
+    DES_key_schedule ks;
+    DES_set_key_unchecked((DES_cblock *)key, &ks);
+    for (size_t i = 0; i < len; i += BLOCK_SIZE) {
+        DES_ecb_encrypt((DES_cblock *)(ciphertext + i), (DES_cblock *)(decrypted + i), &ks, DES_DECRYPT);
+    }
+}
+void CBC_decrypt(uint8_t *ciphertext, size_t len, uint8_t *key, uint8_t *iv, uint8_t *decrypted) {
+    DES_key_schedule ks;
+    DES_set_key_unchecked((DES_cblock *)key, &ks);
+    uint8_t xor_block[BLOCK_SIZE];
+    memcpy(xor_block, iv, BLOCK_SIZE); 
+    for (size_t i = 0; i < len; i += BLOCK_SIZE) {
+        uint8_t temp_block[BLOCK_SIZE];
+        memcpy(temp_block, ciphertext + i, BLOCK_SIZE);
+        DES_ecb_encrypt((DES_cblock *)(ciphertext + i), (DES_cblock *)(decrypted + i), &ks, DES_DECRYPT);
+        for (size_t j = 0; j < BLOCK_SIZE; j++) {
+            decrypted[i + j] ^= xor_block[j];
+        }
+        memcpy(xor_block, temp_block, BLOCK_SIZE);
+    }
+}
+int main() {
+    uint8_t key[8] = {0x13, 0x34, 0x57, 0x79, 0x9b, 0xbc, 0xdf, 0xf1};  
+    uint8_t iv[BLOCK_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0};
+    uint8_t plaintext[] = "This is a test message for ECB and CBC modes.";
+    size_t plaintext_len = strlen((char *)plaintext);
+    size_t padded_len = (plaintext_len % BLOCK_SIZE == 0) ? plaintext_len : (plaintext_len + BLOCK_SIZE - plaintext_len % BLOCK_SIZE);
+    uint8_t padded_plaintext[padded_len];
+    memset(padded_plaintext, 0, padded_len);
+    memcpy(padded_plaintext, plaintext, plaintext_len);
+    uint8_t ecb_ciphertext[padded_len];
+    uint8_t cbc_ciphertext[padded_len];
+    uint8_t ecb_decrypted[padded_len];
+    uint8_t cbc_decrypted[padded_len];
+    ECB_encrypt(padded_plaintext, padded_len, key, ecb_ciphertext);
+    CBC_encrypt(padded_plaintext, padded_len, key, iv, cbc_ciphertext);
+    introduce_error(ecb_ciphertext, 0, 1); 
+    introduce_error(cbc_ciphertext, 0, 1);  
+    ECB_decrypt(ecb_ciphertext, padded_len, key, ecb_decrypted);
+    CBC_decrypt(cbc_ciphertext, padded_len, key, iv, cbc_decrypted);
+    printf("Original Plaintext: %s\n", plaintext);
+    printf("\nECB Decrypted (with error in ciphertext block):\n%s\n", ecb_decrypted);
+    printf("\nCBC Decrypted (with error in ciphertext block):\n%s\n", cbc_decrypted);
+    return 0;
+}
