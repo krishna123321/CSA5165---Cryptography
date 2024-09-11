@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <stdint.h>
+uint8_t S_DES_encrypt(uint8_t block, uint16_t key);
+uint8_t xor_blocks(uint8_t block1, uint8_t block2);
+void CTR_encrypt_decrypt(uint8_t *input, uint8_t *output, size_t len, uint8_t counter, uint16_t key) {
+    for (size_t i = 0; i < len; i++) {
+        uint8_t encrypted_counter = S_DES_encrypt(counter, key);
+        output[i] = xor_blocks(input[i], encrypted_counter);
+        counter++;
+    }
+}
+uint8_t xor_blocks(uint8_t block1, uint8_t block2) {
+    return block1 ^ block2;
+}
+uint8_t S_DES_encrypt(uint8_t block, uint16_t key) {
+    return block ^ (key & 0xFF);  
+}
+int main() {
+    uint8_t plaintext[] = {0b00000001, 0b00000010, 0b00000100};  
+    uint8_t counter = 0b00000000;                                
+    uint16_t key = 0b0111111101;                             
+    uint8_t ciphertext[3];
+    uint8_t decrypted_text[3];
+    size_t len = sizeof(plaintext) / sizeof(plaintext[0]);
+    CTR_encrypt_decrypt(plaintext, ciphertext, len, counter, key);
+    printf("Encrypted ciphertext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("0x%02X ", ciphertext[i]);
+    }
+    printf("\n");
+    CTR_encrypt_decrypt(ciphertext, decrypted_text, len, counter, key);
+    printf("Decrypted plaintext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("0x%02X ", decrypted_text[i]);
+    }
+    printf("\n");
+    return 0;
+}
