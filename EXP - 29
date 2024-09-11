@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#define STATE_SIZE 5
+#define LANE_SIZE 64 
+typedef struct {
+    uint64_t state[STATE_SIZE][STATE_SIZE];
+} SHA3State;
+void print_state(SHA3State *s) {
+    for (int i = 0; i < STATE_SIZE; i++) {
+        for (int j = 0; j < STATE_SIZE; j++) {
+            printf("%016llx ", s->state[i][j]);
+        }
+        printf("\n");
+    }
+}
+int all_lanes_nonzero(SHA3State *s) {
+    for (int i = 0; i < STATE_SIZE; i++) {
+        for (int j = 0; j < STATE_SIZE; j++) {
+            if (s->state[i][j] == 0) {
+            }
+        }
+    }
+    return 1; 
+}
+void process_block(SHA3State *s) {
+    s->state[0][0] = 0x01;
+}
+int main() {
+    SHA3State s;
+    memset(&s, 0, sizeof(s)); 
+    printf("Initial state:\n");
+    print_state(&s);
+    int rounds = 0;
+    while (!all_lanes_nonzero(&s)) {
+        process_block(&s);
+        rounds++;
+        printf("Round %d:\n", rounds);
+        print_state(&s);
+    }
+    printf("All lanes have at least one nonzero bit after %d rounds.\n", rounds);
+    return 0;
+}
