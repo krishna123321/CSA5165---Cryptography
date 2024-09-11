@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <stdint.h>
+uint8_t S_DES_encrypt(uint8_t plaintext, uint16_t key);
+uint8_t S_DES_decrypt(uint8_t ciphertext, uint16_t key);
+uint8_t xor_blocks(uint8_t block1, uint8_t block2) {
+    return block1 ^ block2;
+}
+void CBC_encrypt(uint8_t *plaintext, uint8_t *ciphertext, size_t len, uint8_t iv, uint16_t key) {
+    uint8_t previous_block = iv;
+    for (size_t i = 0; i < len; i++) {
+        uint8_t xored = xor_blocks(plaintext[i], previous_block);
+        ciphertext[i] = S_DES_encrypt(xored, key);
+        previous_block = ciphertext[i];
+    }
+}
+void CBC_decrypt(uint8_t *ciphertext, uint8_t *plaintext, size_t len, uint8_t iv, uint16_t key) {
+    uint8_t previous_block = iv;
+    for (size_t i = 0; i < len; i++) {
+        uint8_t decrypted = S_DES_decrypt(ciphertext[i], key);
+        plaintext[i] = xor_blocks(decrypted, previous_block);
+        previous_block = ciphertext[i]; 
+    }
+}
+uint8_t S_DES_encrypt(uint8_t plaintext, uint16_t key) {
+    return plaintext ^ key; 
+}
+uint8_t S_DES_decrypt(uint8_t ciphertext, uint16_t key) {
+    return ciphertext ^ key; 
+}
+int main() {
+    uint8_t plaintext[] = {0b00000001, 0b00100011};  
+    uint8_t iv = 0b10101010;                        
+    uint16_t key = 0b0111111101;            
+    uint8_t ciphertext[2];
+    uint8_t decrypted_text[2];
+    size_t len = sizeof(plaintext) / sizeof(plaintext[0]);
+    CBC_encrypt(plaintext, ciphertext, len, iv, key);
+    printf("Encrypted ciphertext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("0x%02X ", ciphertext[i]);
+    }
+    printf("\n");
+    CBC_decrypt(ciphertext, decrypted_text, len, iv, key);
+    printf("Decrypted plaintext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("0x%02X ", decrypted_text[i]);
+    }
+    printf("\n");
+    return 0;
+}
