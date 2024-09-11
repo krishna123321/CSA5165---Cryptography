@@ -1,0 +1,37 @@
+#include <openssl/des.h>
+#include <openssl/evp.h>
+#include <stdio.h>
+#include <string.h>
+void handleErrors(void) {
+    ERR_print_errors_fp(stderr);
+    abort();
+}
+void encrypt3DES_CBC(const unsigned char *plaintext, int plaintext_len,
+                     const unsigned char *key, const unsigned char *iv,
+                     unsigned char *ciphertext, int *ciphertext_len) {
+    EVP_CIPHER_CTX *ctx;
+    if (!(ctx = EVP_CIPHER_CTX_new())) handleErrors();
+    if (1 != EVP_EncryptInit_ex(ctx, EVP_des_ede3_cbc(), NULL, key, iv))
+        handleErrors();
+    if (1 != EVP_EncryptUpdate(ctx, ciphertext, ciphertext_len, plaintext, plaintext_len))
+        handleErrors();
+    int len;
+    if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + *ciphertext_len, &len))
+        handleErrors();
+    *ciphertext_len += len;
+    EVP_CIPHER_CTX_free(ctx);
+}
+int main() {
+    unsigned char key[24] = {0}; 
+    unsigned char iv[8] = {0};
+    unsigned char plaintext[] = "This is a test message.";
+    unsigned char ciphertext[128];
+    int ciphertext_len;
+    encrypt3DES_CBC(plaintext, strlen((char *)plaintext), key, iv, ciphertext, &ciphertext_len);
+    printf("Ciphertext (hex): ");
+    for (int i = 0; i < ciphertext_len; i++) {
+        printf("%02x", ciphertext[i]);
+    }
+    printf("\n");
+	return 0;
+}
