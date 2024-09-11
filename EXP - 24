@@ -1,0 +1,34 @@
+#include <stdio.h>
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0;
+        *y = 1;
+        return b;
+    }
+    int x1, y1; 
+    int gcd = extended_gcd(b % a, a, &x1, &y1);
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+    return gcd;
+}
+int mod_inverse(int e, int phi_n) {
+    int x, y;
+    int gcd = extended_gcd(e, phi_n, &x, &y);
+    if (gcd != 1) {
+        return -1;  
+    }
+    return (x % phi_n + phi_n) % phi_n;
+}
+int main() {
+    int p = 59, q = 61;
+    int n = p * q;
+    int e = 31;
+    int phi_n = (p - 1) * (q - 1);
+    int d = mod_inverse(e, phi_n);
+    if (d == -1) {
+        printf("Modular inverse doesn't exist.\n");
+    } else {
+        printf("The private key d is: %d\n", d);
+    }
+    return 0;
+}
