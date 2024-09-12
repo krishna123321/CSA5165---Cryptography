@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#define BLOCK_SIZE 8 
+void xor_encrypt(uint8_t *block, uint8_t *key) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] ^= key[i];
+    }
+}
+void print_block(uint8_t *block, const char *label) {
+    printf("%s: ", label);
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        printf("%02X ", block[i]);
+    }
+    printf("\n");
+}
+void ecb_mode(uint8_t *plaintext, uint8_t *key, uint8_t *ciphertext, int num_blocks) {
+    for (int i = 0; i < num_blocks; i++) {
+        xor_encrypt(&plaintext[i * BLOCK_SIZE], key);  
+        memcpy(&ciphertext[i * BLOCK_SIZE], &plaintext[i * BLOCK_SIZE], BLOCK_SIZE);
+    }
+}
+void cbc_encrypt(uint8_t *plaintext, uint8_t *key, uint8_t *ciphertext, uint8_t *iv, int num_blocks) {
+    uint8_t previous_block[BLOCK_SIZE];
+    memcpy(previous_block, iv, BLOCK_SIZE);
+    for (int i = 0; i < num_blocks; i++) {
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            plaintext[i * BLOCK_SIZE + j] ^= previous_block[j];
+        }
+        xor_encrypt(&plaintext[i * BLOCK_SIZE], key);
+        memcpy(&ciphertext[i * BLOCK_SIZE], &plaintext[i * BLOCK_SIZE], BLOCK_SIZE);
+        memcpy(previous_block, &ciphertext[i * BLOCK_SIZE], BLOCK_SIZE);
+    }
+}
+void cbc_decrypt(uint8_t *ciphertext, uint8_t *key, uint8_t *plaintext, uint8_t *iv, int num_blocks) {
+    uint8_t previous_block[BLOCK_SIZE];
+    memcpy(previous_block, iv, BLOCK_SIZE); 
+    for (int i = 0; i < num_blocks; i++) {
+        uint8_t decrypted_block[BLOCK_SIZE];
+        memcpy(decrypted_block, &ciphertext[i * BLOCK_SIZE], BLOCK_SIZE);
+        xor_encrypt(decrypted_block, key);
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            decrypted_block[j] ^= previous_block[j];
+        }
+        memcpy(&plaintext[i * BLOCK_SIZE], decrypted_block, BLOCK_SIZE);
+        memcpy(previous_block, &ciphertext[i * BLOCK_SIZE], BLOCK_SIZE);
+    }
+}
+void cfb_mode(uint8_t *plaintext, uint8_t *key, uint8_t *ciphertext, uint8_t *iv, int num_blocks) {
+    uint8_t feedback[BLOCK_SIZE];
+    memcpy(feedback, iv, BLOCK_SIZE);  
+    for (int i = 0; i < num_blocks; i++) {
+        xor_encrypt(feedback, key);
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            ciphertext[i * BLOCK_SIZE + j] = plaintext[i * BLOCK_SIZE + j] ^ feedback[j];
+        }
+        memcpy(feedback, &ciphertext[i * BLOCK_SIZE], BLOCK_SIZE);
+    }
+}
+int main() {
+    uint8_t plaintext[BLOCK_SIZE * 2] = {
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,  
+        0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0   
+    };
+    uint8_t key[BLOCK_SIZE] = {
+        0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08
+    };
+    uint8_t iv[BLOCK_SIZE] = {
+        0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8
+    };
+    uint8_t ciphertext[BLOCK_SIZE * 2];
+    uint8_t decrypted[BLOCK_SIZE * 2];
+    printf("Original Plaintext:\n");
+    print_block(plaintext, "Block 1");
+    print_block(plaintext + BLOCK_SIZE, "Block 2");
+    printf("\nECB Mode:\n");
+    ecb_mode(plaintext, key, ciphertext, 2);
+    print_block(ciphertext, "Ciphertext Block 1");
+    print_block(ciphertext + BLOCK_SIZE, "Ciphertext Block 2");
+    ecb_mode(ciphertext, key, decrypted, 2);
+    print_block(decrypted, "Decrypted Block 1");
+    print_block(decrypted + BLOCK_SIZE, "Decrypted Block 2");
+    printf("\nCBC Mode:\n");
+    cbc_encrypt(plaintext, key, ciphertext, iv, 2);
+    print_block(ciphertext, "Ciphertext Block 1");
+    print_block(ciphertext + BLOCK_SIZE, "Ciphertext Block 2");
+    cbc_decrypt(ciphertext, key, decrypted, iv, 2);
+    print_block(decrypted, "Decrypted Block 1");
+    print_block(decrypted + BLOCK_SIZE, "Decrypted Block 2");
+    printf("\nCFB Mode:\n");
+    cfb_mode(plaintext, key, ciphertext, iv, 2);
+    print_block(ciphertext, "Ciphertext Block 1");
+    print_block(ciphertext + BLOCK_SIZE, "Ciphertext Block 2");
+    cfb_mode(ciphertext, key, decrypted, iv, 2);
+    print_block(decrypted, "Decrypted Block 1");
+    print_block(decrypted + BLOCK_SIZE, "Decrypted Block 2");s
+    return 0;
+}
