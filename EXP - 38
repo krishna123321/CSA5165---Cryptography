@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <stdlib.h>s
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1;
+}
+int determinant(int matrix[2][2]) {
+    return (matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]) % 26;
+}
+int inverseMatrix(int matrix[2][2], int inverse[2][2]) {
+    int det = determinant(matrix);
+    if (det < 0) {
+        det += 26;
+    }
+    int det_inv = modInverse(det, 26);
+    if (det_inv == -1) {
+        printf("Matrix is not invertible.\n");
+        return 0;
+    }
+    inverse[0][0] = (matrix[1][1] * det_inv) % 26;
+    inverse[0][1] = (-matrix[0][1] * det_inv) % 26;
+    inverse[1][0] = (-matrix[1][0] * det_inv) % 26;
+    inverse[1][1] = (matrix[0][0] * det_inv) % 26;
+    if (inverse[0][0] < 0) inverse[0][0] += 26;
+    if (inverse[0][1] < 0) inverse[0][1] += 26;
+    if (inverse[1][0] < 0) inverse[1][0] += 26;
+    if (inverse[1][1] < 0) inverse[1][1] += 26;
+    return 1;
+}
+void hillEncrypt(int key[2][2], char plaintext[3], char ciphertext[3]) {
+    int pt[2];
+    int ct[2];
+    pt[0] = plaintext[0] - 'A';
+    pt[1] = plaintext[1] - 'A';
+    ct[0] = (key[0][0] * pt[0] + key[0][1] * pt[1]) % 26;
+    ct[1] = (key[1][0] * pt[0] + key[1][1] * pt[1]) % 26;
+    ciphertext[0] = ct[0] + 'A';
+    ciphertext[1] = ct[1] + 'A';
+    ciphertext[2] = '\0';
+}
+void hillDecrypt(int key[2][2], char ciphertext[3], char plaintext[3]) {
+    int inverse[2][2];
+    if (!inverseMatrix(key, inverse)) {
+        return;
+    }
+    int ct[2];
+    int pt[2];
+    ct[0] = ciphertext[0] - 'A';
+    ct[1] = ciphertext[1] - 'A';
+    pt[0] = (inverse[0][0] * ct[0] + inverse[0][1] * ct[1]) % 26;
+    pt[1] = (inverse[1][0] * ct[0] + inverse[1][1] * ct[1]) % 26;
+    if (pt[0] < 0) pt[0] += 26;
+    if (pt[1] < 0) pt[1] += 26;
+    plaintext[0] = pt[0] + 'A';
+    plaintext[1] = pt[1] + 'A';
+    plaintext[2] = '\0';
+}
+void chosenPlaintextAttack(char *plaintext1, char *ciphertext1, char *plaintext2, char *ciphertext2, int key[2][2]) {
+    int P[2][2], C[2][2];
+    P[0][0] = plaintext1[0] - 'A';
+    P[1][0] = plaintext1[1] - 'A';
+    P[0][1] = plaintext2[0] - 'A';
+    P[1][1] = plaintext2[1] - 'A';
+    C[0][0] = ciphertext1[0] - 'A';
+    C[1][0] = ciphertext1[1] - 'A';
+    C[0][1] = ciphertext2[0] - 'A';
+    C[1][1] = ciphertext2[1] - 'A';
+    int P_inv[2][2];
+    if (!inverseMatrix(P, P_inv)) {
+        printf("Chosen plaintext attack failed. Plaintext matrix is not invertible.\n");
+        return;
+    }
+    key[0][0] = (C[0][0] * P_inv[0][0] + C[0][1] * P_inv[1][0]) % 26;
+    key[0][1] = (C[0][0] * P_inv[0][1] + C[0][1] * P_inv[1][1]) % 26;
+    key[1][0] = (C[1][0] * P_inv[0][0] + C[1][1] * P_inv[1][0]) % 26;
+    key[1][1] = (C[1][0] * P_inv[0][1] + C[1][1] * P_inv[1][1]) % 26;
+    if (key[0][0] < 0) key[0][0] += 26;
+    if (key[0][1] < 0) key[0][1] += 26;
+    if (key[1][0] < 0) key[1][0] += 26;
+    if (key[1][1] < 0) key[1][1] += 26;
+    printf("Recovered key matrix:\n");
+    printf("[ %d  %d ]\n", key[0][0], key[0][1]);
+    printf("[ %d  %d ]\n", key[1][0], key[1][1]);
+}
+int main() {
+    char plaintext1[3], plaintext2[3], ciphertext1[3], ciphertext2[3];
+    int key[2][2];
+    printf("Enter first plaintext pair (2 letters): ");
+    scanf("%s", plaintext1);
+    printf("Enter corresponding ciphertext pair (2 letters): ");
+    scanf("%s", ciphertext1);
+    printf("Enter second plaintext pair (2 letters): ");
+    scanf("%s", plaintext2);
+    printf("Enter corresponding ciphertext pair (2 letters): ");
+    scanf("%s", ciphertext2);
+    chosenPlaintextAttack(plaintext1, ciphertext1, plaintext2, ciphertext2, key);
+    char sample[3], encrypted[3], decrypted[3];
+    printf("Enter a two-letter plaintext to encrypt: ");
+    scanf("%s", sample);
+    hillEncrypt(key, sample, encrypted);
+    printf("Encrypted text: %s\n", encrypted);
+}
+
+    
