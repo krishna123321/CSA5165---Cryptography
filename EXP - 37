@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+float english_frequencies[] = {
+    8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015, 6.094, 6.966, 0.153, 
+    0.772, 4.025, 2.406, 6.749, 7.507, 1.929, 0.095, 5.987, 6.327, 9.056, 
+    2.758, 0.978, 2.361, 0.150, 1.974, 0.074
+};
+struct LetterFrequency {
+    char letter;
+    float frequency;
+};
+int compare_frequencies(const void *a, const void *b) {
+    float freq_a = ((struct LetterFrequency *)a)->frequency;
+    float freq_b = ((struct LetterFrequency *)b)->frequency;
+    return (freq_b > freq_a) - (freq_b < freq_a); 
+}
+void calculate_frequencies(char *text, struct LetterFrequency *frequencies) {
+    int letter_counts[26] = {0};
+    int total_letters = 0;
+    for (int i = 0; text[i] != '\0'; i++) {
+        char ch = text[i];
+        if (ch >= 'A' && ch <= 'Z') {
+            letter_counts[ch - 'A']++;
+            total_letters++;
+        } else if (ch >= 'a' && ch <= 'z') {
+            letter_counts[ch - 'a']++;
+            total_letters++;
+        }
+    }
+    for (int i = 0; i < 26; i++) {
+        frequencies[i].letter = 'A' + i;
+        frequencies[i].frequency = ((float)letter_counts[i] / total_letters) * 100;
+    }
+}
+void generate_plaintexts(char *ciphertext, struct LetterFrequency *cipher_frequencies, int top_n) {
+    struct LetterFrequency sorted_english_frequencies[26];
+    for (int i = 0; i < 26; i++) {
+        sorted_english_frequencies[i].letter = 'A' + i;
+        sorted_english_frequencies[i].frequency = english_frequencies[i];
+    }
+    qsort(sorted_english_frequencies, 26, sizeof(struct LetterFrequency), compare_frequencies);
+    qsort(cipher_frequencies, 26, sizeof(struct LetterFrequency), compare_frequencies);
+    for (int guess = 0; guess < top_n; guess++) {
+        printf("\nPossible plaintext #%d:\n", guess + 1);
+        char substitution_map[26];
+        for (int i = 0; i < 26; i++) {
+            substitution_map[cipher_frequencies[i].letter - 'A'] = sorted_english_frequencies[(i + guess) % 26].letter;
+        }
+        for (int i = 0; ciphertext[i] != '\0'; i++) {
+            char ch = ciphertext[i];
+            if (ch >= 'A' && ch <= 'Z') {
+                printf("%c", substitution_map[ch - 'A']);
+            } else if (ch >= 'a' && ch <= 'z') {
+                printf("%c", substitution_map[ch - 'a'] + 32);  
+            } else {
+                printf("%c", ch);  
+            }
+        }
+        printf("\n");
+    }
+}
+int main() {
+    char ciphertext[1000];
+    struct LetterFrequency cipher_frequencies[26];
+    int top_n;
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+    ciphertext[strcspn(ciphertext, "\n")] = '\0'; 
+    printf("Enter the number of top possible plaintexts to generate: ");
+    scanf("%d", &top_n);\
+    calculate_frequencies(ciphertext, cipher_frequencies);
+    generate_plaintexts(ciphertext, cipher_frequencies, top_n);
+    return 0;
+}
