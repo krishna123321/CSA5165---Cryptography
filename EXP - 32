@@ -1,0 +1,51 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#define MESSAGE "Hello, World!"
+typedef struct {
+    unsigned int r;
+    unsigned int s;
+} DSASignature;
+typedef struct {
+    unsigned int signature;
+} RSASignature;
+DSASignature sign_with_dsa(const char* message) {
+    DSASignature sig;
+    unsigned int k;
+    k = rand() % 1000 + 1; 
+    sig.r = k * strlen(message); 
+    sig.s = (k + strlen(message)) % 1000;
+    return sig;
+}
+RSASignature sign_with_rsa(const char* message) {
+    RSASignature sig;
+    sig.signature = strlen(message) * 12345; 
+    return sig;
+}
+int main() {
+    srand(time(NULL));  
+    printf("DSA Signature Demonstration:\n");
+    printf("Signing the same message twice using DSA...\n");
+    DSASignature dsa_sig1 = sign_with_dsa(MESSAGE);
+    DSASignature dsa_sig2 = sign_with_dsa(MESSAGE);
+    printf("First DSA signature: r = %u, s = %u\n", dsa_sig1.r, dsa_sig1.s);
+    printf("Second DSA signature: r = %u, s = %u\n", dsa_sig2.r, dsa_sig2.s);
+    if (dsa_sig1.r != dsa_sig2.r || dsa_sig1.s != dsa_sig2.s) {
+        printf("The DSA signatures are different, as expected.\n");
+    } else {
+        printf("The DSA signatures are the same, which is unexpected.\n");
+    }
+    printf("\nRSA Signature Demonstration:\n");
+    printf("Signing the same message twice using RSA...\n");
+    RSASignature rsa_sig1 = sign_with_rsa(MESSAGE);
+    RSASignature rsa_sig2 = sign_with_rsa(MESSAGE);
+    printf("First RSA signature: signature = %u\n", rsa_sig1.signature);
+    printf("Second RSA signature: signature = %u\n", rsa_sig2.signature);
+    if (rsa_sig1.signature == rsa_sig2.signature) {
+        printf("The RSA signatures are the same, as expected.\n");
+    } else {
+        printf("The RSA signatures are different, which is unexpected.\n");
+    }
+    return 0;
+}
