@@ -1,0 +1,48 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#define R64  0x1B  
+#define R128 0x87
+void left_shift(uint8_t *input, uint8_t *output, int block_size) {
+    int carry = 0;
+    for (int i = block_size - 1; i >= 0; i--) {
+        int next_carry = (input[i] & 0x80) ? 1 : 0;
+        output[i] = (input[i] << 1) | carry;  
+        carry = next_carry;
+    }
+}
+void xor_with_constant(uint8_t *input, uint8_t constant, int block_size) {
+    input[block_size - 1] ^= constant;
+}
+void generate_subkeys(uint8_t *key, uint8_t *K1, uint8_t *K2, int block_size) {
+    uint8_t L[16] = {0};  
+    uint8_t R = (block_size == 16) ? R128 : R64;
+    memcpy(L, key, block_size); 
+    left_shift(L, K1, block_size);
+    if (L[0] & 0x80) {  
+        xor_with_constant(K1, R, block_size);
+    }
+    left_shift(K1, K2, block_size);
+    if (K1[0] & 0x80) {  
+        xor_with_constant(K2, R, block_size);
+    }
+}
+int main() {
+    uint8_t key_128[16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 
+                           0xab, 0xf7, 0x80, 0x9f, 0xbc, 0xc7, 0xd6, 0x19};
+    uint8_t K1_128[16] = {0};
+    uint8_t K2_128[16] = {0};
+    
+    generate_subkeys(key_128, K1_128, K2_128, 16); 
+    printf("K1 (128-bit): ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", K1_128[i]);
+    }
+    printf("\n");
+    printf("K2 (128-bit): ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", K2_128[i]);
+    }
+    printf("\n");
+    return 0;
+}
